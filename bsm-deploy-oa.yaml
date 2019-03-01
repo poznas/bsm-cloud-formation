@@ -4,6 +4,6 @@ Resources:
   MyInstance:
     Type: AWS::EC2::Instance
     Properties:
-      AvailabilityZone: eu-central-1
+      AvailabilityZone: eu-central-1a
       ImageId: ami-a4c7edb2
       InstanceType: t2.micro
