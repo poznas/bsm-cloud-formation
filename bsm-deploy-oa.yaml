@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description:
+Description: "test jenkins cloud formation"
 Resources:
   MyInstance:
     Type: AWS::EC2::Instance
