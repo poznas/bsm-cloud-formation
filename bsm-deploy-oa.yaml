@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description:
 Resources:
-  DummyServer:
-    Type: "AWS::EC2::Instance"
+  MyInstance:
+    Type: AWS::EC2::Instance
     Properties:
-      ImageId: ""
+      AvailabilityZone: eu-central-1
+      ImageId: ami-a4c7edb2
+      InstanceType: t2.micro
