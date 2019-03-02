@@ -1,9 +1,76 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "test jenkins cloud formation"
+Description: "BSM Cloud Formation"
+Parameters:
+  SourceCodeBucket:
+    Type: String
 Resources:
-  MyInstance:
+
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+
+  PublicHttpSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public HTTP access via port 80
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+
+  #Application source code repository access
+  RootRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+            - sts:AssumeRole
+        Path: "/"
+        Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:Get*
+              - s3:List*
+              Resource:
+                Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: SourceCodeBucket
+                  - "/*"
+
+  RootInstanceProfile:
+      Type: AWS::IAM::InstanceProfile
+      Properties:
+        Path: "/"
+        Roles:
+        - Ref: RootRole
+
+  OpenApiEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: eu-central-1a
       ImageId: ami-07f1fbbff759e24dd
+      KeyName: MasterKeyBSM
       InstanceType: t2.micro
+      IamInstanceProfile:
+              Ref: RootInstanceProfile
+      SecurityGroups:
+              - !Ref SSHSecurityGroup
+              - !Ref PublicHttpSecurityGroup
