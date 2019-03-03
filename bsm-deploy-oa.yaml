@@ -14,6 +14,8 @@ Parameters:
   OpenApiHttpPort:
     Type: String
     Default: '5000'
+  OpenApiVersion:
+    Type: String
 
 Resources:
 
@@ -54,7 +56,7 @@ Resources:
           - ''
           - - 'HTTP:'
             - Ref: OpenApiHttpPort
-            - '/api/swagger-ui.html'
+            - "/api/v2/api-docs"
         HealthyThreshold: '3'
         UnhealthyThreshold: '2'
         Interval: '30'
@@ -82,7 +84,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:
           Timeout: PT15M
-          Count: '1'
+          Count: '0'
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: '1'
@@ -149,6 +151,10 @@ Resources:
     Properties:
       GroupDescription: Enable SSH access and HTTP from the load balancer only
       SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5000
+        ToPort: 5000
+        CidrIp: 0.0.0.0/0
       - CidrIp: 0.0.0.0/0
         FromPort: '22'
         IpProtocol: tcp
@@ -214,10 +220,27 @@ Resources:
         InstanceType: t2.micro
         IamInstanceProfile:
           Ref: RootInstanceProfile
-        UserData: IyEvdXNyL2Jpbi9lbnYgYmFzaApjdXJsIC1PIGh0dHBzOi8vZG93bmxvYWQuamF2YS5uZXQvamF2YS9HQS9qZGsxMS8xMy9HUEwvb3Blbmpkay0xMS4wLjFfbGludXgteDY0X2Jpbi50YXIuZ3oKdGFyIHp4dmYgb3Blbmpkay0xMS4wLjFfbGludXgteDY0X2Jpbi50YXIuZ3oKc3VkbyBtdiBqZGstMTEuMC4xIC91c3IvbG9jYWwvCmVjaG8gJ2V4cG9ydCBKQVZBX0hPTUU9L3Vzci9sb2NhbC9qZGstMTEuMC4xO2V4cG9ydCBQQVRIPSRQQVRIOiRKQVZBX0hPTUUvYmluJyB8IHN1ZG8gdGVlIC9ldGMvcHJvZmlsZS5kL2pkazExLnNoCnNvdXJjZSAvZXRjL3Byb2ZpbGUuZC9qZGsxMS5zaAphd3MgczMgY3AgczM6Ly9yZXBvLmJzbS5wdWIvcmVsZWFzZS9jb20vYnNtL2FwcGxpY2F0aW9uLzAuMC4yMi9hcHBsaWNhdGlvbi0wLjAuMjIuamFyIC9ob21lL2VjMi11c2VyL2FwcGxpY2F0aW9uLTAuMC4yMi5qYXIKbm9odXAgamF2YSAtamFyIGFwcGxpY2F0aW9uLTAuMC4yMi5qYXI=
-#        Fn::Base64:
-#          Fn::Join:
-
+        UserData:
+          Fn::Base64:
+            Fn::Join:
+            - ''
+            - - "#!/bin/bash\n"
+              - "set -x"
+              - "\n"
+              - "exec > >(tee /var/log/user-data.log|logger -t user-data ) 2>&1"
+              - "\n"
+              - "aws s3 cp s3://repo.bsm.pub/release/com/bsm/application/"
+              - Ref: OpenApiVersion
+              - "/application-"
+              - Ref: OpenApiVersion
+              - ".jar /home/ec2-user/open-api.jar"
+              - "\n"
+              - "aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api-init.sh /home/ec2-user/open-api-init.sh"
+              - "\n"
+              - "chmod +x /home/ec2-user/open-api-init.sh"
+              - "\n"
+              - "bash /home/ec2-user/open-api-init.sh"
+              - "\n"
 Outputs:
   URL:
     Description: The URL of the website
