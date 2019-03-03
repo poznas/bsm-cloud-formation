@@ -233,7 +233,7 @@ Resources:
               - Ref: OpenApiVersion
               - "/application-"
               - Ref: OpenApiVersion
-              - ".jar /home/ec2-user/open-api.jar"
+              - ".jar /opt/open-api/open-api.jar"
               - "\n"
               - "aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api-init.sh /home/ec2-user/open-api-init.sh"
               - "\n"

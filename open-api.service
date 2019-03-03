@@ -1,0 +1,17 @@
+
+[Unit]
+Description=open-api
+After=syslog.target
+
+[Service]
+EnvironmentFile=/etc/default/open-api.env
+WorkingDirectory=/opt/open-api
+User=ec2-user
+ExecStart=/usr/sbin/java -Duser.timezone=UTC $LOGGING $JAVA_OPTS -jar $BINARY
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=open-api
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
