@@ -12,11 +12,21 @@ aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api.env /etc/default/open-
 aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api.service /etc/systemd/system/open-api.service
 aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api.conf /etc/rsyslog.d/open-api.conf
 aws s3 cp s3://repo.bsm.pub/cloud-formation-init/logback-spring.xml /opt/open-api/logback-spring.xml
+aws s3 cp s3://repo.bsm.pub/cloud-formation-init/bsm-secrets.json /opt/open-api/bsm-secrets.json
 
 chmod -R 500 /opt/open-api
 mkdir /opt/open-api/logs
 
 chown -R ec2-user:ec2-user /opt/open-api
+
+wget https://releases.hashicorp.com/vault/1.0.3/vault_1.0.3_linux_amd64.zip
+unzip vault_1.0.3_linux_amd64.zip
+mv vault /usr/local/bin/vault
+echo "export VAULT_ADDR='http://127.0.0.1:8200'" > /etc/profile.d/vault.sh
+chmod +x /etc/profile.d/vault.sh
+vault server -dev -dev-root-token-id=00000000-0000-0000-0000-000000000000 &
+
+vault kv put secret/open-api @/opt/open-api/bsm-secrets.json
 
 systemctl daemon-reload
 systemctl enable open-api
