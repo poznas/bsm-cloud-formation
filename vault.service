@@ -1,0 +1,12 @@
+[Unit]
+Description="Local vault server"
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User=vault
+Group=vault
+ExecStart=/usr/local/bin/vault server -dev -dev-root-token-id=00000000-0000-0000-0000-000000000000
+
+[Install]
+WantedBy=multi-user.target
