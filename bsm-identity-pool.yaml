@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: An Amazon Cognito Identity Pool for BSM
+Parameters:
+  IdentityPoolName:
+      Type: String
+      Default: 'BSM Users'
+  DeveloperProviderName:
+      Type: String
+      Default: 'login.bsm.pub'
+  BucketName:
+        Type: String
+        Default: 'bsm-user-media'
+
+Resources:
+  CognitoIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      AllowUnauthenticatedIdentities: false
+      IdentityPoolName:
+        Ref: IdentityPoolName
+      DeveloperProviderName:
+        Ref: DeveloperProviderName
+
+  CognitoAuthenticatedRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud:
+                  Ref: CognitoIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+        Path: "/"
+        Policies:
+        - PolicyName: main
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            # Allow authenticated users to read files from main media bucket
+            - Effect: Allow
+              Action:
+              - s3:ListBucket
+              - s3:GetObject
+              Resource:
+                Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: BucketName
+                  - '/*'
+              Condition:
+                StringLike:
+                  s3:prefix:
+                  - Fn::Join:
+                    - ''
+                    - - '/'
+                      - Ref: BucketName
+                      - '/'
+            # Allow authenticated users to write to dedicated subdirectories
+            - Effect: Allow
+              Action:
+              - s3:PutObject
+              - s3:DeleteObject
+              Resource:
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: BucketName
+                  - '/${cognito-identity.amazonaws.com:sub}'
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: BucketName
+                  - '/${cognito-identity.amazonaws.com:sub}/*'
+
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+     IdentityPoolId: !Ref CognitoIdentityPool
+     Roles: {"authenticated": !GetAtt CognitoAuthenticatedRole.Arn}
