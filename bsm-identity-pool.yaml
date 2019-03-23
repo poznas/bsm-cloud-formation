@@ -39,7 +39,7 @@ Resources:
                 cognito-identity.amazonaws.com:amr: authenticated
         Path: "/"
         Policies:
-        - PolicyName: main
+        - PolicyName: 'userBucketAccess'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -79,8 +79,41 @@ Resources:
                   - Ref: BucketName
                   - '/${cognito-identity.amazonaws.com:sub}/*'
 
+  IdentityPoolManagerUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+      - PolicyName: 'supportDeveloperAuthenticatedIdentities'
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - cognito-identity:GetOpenIdTokenForDeveloperIdentity
+            - cognito-identity:LookupDeveloperIdentity
+            - cognito-identity:MergeDeveloperIdentities
+            - cognito-identity:UnlinkDeveloperIdentity
+            Resource:
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:cognito-identity:*:*:identitypool/'
+                - Ref: CognitoIdentityPool
+
+  IdentityPoolManagerUserKeys:
+      Type: AWS::IAM::AccessKey
+      Properties:
+        UserName: !Ref IdentityPoolManagerUser
+
   IdentityPoolRoleAttachment:
     Type: AWS::Cognito::IdentityPoolRoleAttachment
     Properties:
      IdentityPoolId: !Ref CognitoIdentityPool
      Roles: {"authenticated": !GetAtt CognitoAuthenticatedRole.Arn}
+
+Outputs:
+  AccessKey:
+    Value: !Ref IdentityPoolManagerUserKeys
+    Description: AWSAccessKeyId of new user
+  SecretKey:
+    Value: !GetAtt [IdentityPoolManagerUserKeys, SecretAccessKey]
+    Description: AWSSecretAccessKey of new user
