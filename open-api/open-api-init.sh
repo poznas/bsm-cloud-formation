@@ -8,9 +8,9 @@ source /etc/profile.d/jdk11.sh
 
 ln -sf /usr/local/jdk-11.0.1/bin/java /sbin/java
 
-aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api.env /etc/default/open-api.env
-aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api.service /etc/systemd/system/open-api.service
-aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api.conf /etc/rsyslog.d/open-api.conf
+aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api/open-api.env /etc/default/open-api.env
+aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api/open-api.service /etc/systemd/system/open-api.service
+aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api/open-api.conf /etc/rsyslog.d/open-api.conf
 aws s3 cp s3://repo.bsm.pub/cloud-formation-init/logback-spring.xml /opt/open-api/logback-spring.xml
 aws s3 cp s3://repo.bsm.pub/cloud-formation-init/bsm-secrets.json /opt/open-api/bsm-secrets.json
 

@@ -1,0 +1,17 @@
+
+[Unit]
+Description=dictionary
+After=syslog.target
+
+[Service]
+EnvironmentFile=/etc/default/dictionary.env
+WorkingDirectory=/opt/dictionary
+User=ec2-user
+ExecStart=/usr/sbin/java -Duser.timezone=UTC $LOGGING $JAVA_OPTS -jar $BINARY
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dictionary
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

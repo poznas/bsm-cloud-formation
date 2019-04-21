@@ -14,8 +14,14 @@ Parameters:
   OpenApiHttpPort:
     Type: String
     Default: '5000'
+  DictionaryHttpPort:
+    Type: String
+    Default: '5001'
   OpenApiVersion:
     Type: String
+  DictionaryVersion:
+    Type: String
+    Default: 0.0.1
 
 Resources:
 
@@ -38,6 +44,11 @@ Resources:
           AliasTarget:
             HostedZoneId: !GetAtt bsmELB.CanonicalHostedZoneNameID
             DNSName: !GetAtt bsmELB.DNSName
+        - Name: dict.bsm.pub.
+          Type: A
+          TTL: '900'
+          ResourceRecords:
+          - !GetAtt DictionaryInstance.PrivateIp
 
   bsmELB:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -151,10 +162,6 @@ Resources:
     Properties:
       GroupDescription: Enable SSH access and HTTP from the load balancer only
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 5000
-        ToPort: 5000
-        CidrIp: 0.0.0.0/0
       - CidrIp: 0.0.0.0/0
         FromPort: '22'
         IpProtocol: tcp
@@ -172,6 +179,25 @@ Resources:
           Fn::GetAtt:
           - bsmELB
           - SourceSecurityGroup.GroupName
+
+  DictionarySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access and HTTP from the Open Api ASG only
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '22'
+        IpProtocol: tcp
+        ToPort: '22'
+      - IpProtocol: tcp
+        FromPort:
+          Ref: DictionaryHttpPort
+        ToPort:
+          Ref: DictionaryHttpPort
+        SourceSecurityGroupId:
+          Fn::GetAtt:
+          - OpenApiSecurityGroup
+          - GroupId
 
   #Application source code repository access
   RootRole:
@@ -235,19 +261,43 @@ Resources:
               - Ref: OpenApiVersion
               - ".jar /opt/open-api/open-api.jar"
               - "\n"
-              - "aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api-init.sh /home/ec2-user/open-api-init.sh"
+              - "aws s3 cp s3://repo.bsm.pub/cloud-formation-init/open-api/open-api-init.sh /home/ec2-user/open-api-init.sh"
               - "\n"
               - "chmod +x /home/ec2-user/open-api-init.sh"
               - "\n"
               - "bash /home/ec2-user/open-api-init.sh"
               - "\n"
-Outputs:
-  URL:
-    Description: The URL of the website
-    Value:
-      Fn::Join:
-      - ''
-      - - http://
-        - Fn::GetAtt:
-          - bsmELB
-          - DNSName
+
+  DictionaryInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone:
+        Ref: AZ
+      KeyName: MasterKeyBSM
+      ImageId: ami-07f1fbbff759e24dd
+      SecurityGroups:
+      - Ref: DictionarySecurityGroup
+      InstanceType: t2.micro
+      IamInstanceProfile:
+        Ref: RootInstanceProfile
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+          - ''
+          - - "#!/bin/bash\n"
+            - "set -x"
+            - "\n"
+            - "exec > >(tee /var/log/user-data.log|logger -t user-data ) 2>&1"
+            - "\n"
+            - "aws s3 cp s3://repo.bsm.pub/release/com/bsm/dict/application/"
+            - Ref: DictionaryVersion
+            - "/application-"
+            - Ref: DictionaryVersion
+            - ".jar /opt/dictionary/dictionary.jar"
+            - "\n"
+            - "aws s3 cp s3://repo.bsm.pub/cloud-formation-init/dictionary/dictionary-init.sh /home/ec2-user/dictionary-init.sh"
+            - "\n"
+            - "chmod +x /home/ec2-user/dictionary-init.sh"
+            - "\n"
+            - "bash /home/ec2-user/dictionary-init.sh"
+            - "\n"
