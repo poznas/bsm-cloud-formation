@@ -94,13 +94,13 @@ Resources:
         - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
     CreationPolicy:
       ResourceSignal:
-          Timeout: PT15M
+          Timeout: PT5M
           Count: '0'
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: '1'
         MaxBatchSize: '1'
-        PauseTime: PT15M
+        PauseTime: PT10M
         WaitOnResourceSignals: 'true'
 
   OpenApiScaleUpPolicy:
@@ -255,6 +255,13 @@ Resources:
               - "\n"
               - "exec > >(tee /var/log/user-data.log|logger -t user-data ) 2>&1"
               - "\n"
+              - '/opt/aws/bin/cfn-init -v '
+              - '         --stack '
+              - Ref: AWS::StackName
+              - '         --resource OpenApiASG '
+              - '         --region '
+              - Ref: AWS::Region
+              - "\n"
               - "aws s3 cp s3://repo.bsm.pub/release/com/bsm/application/"
               - Ref: OpenApiVersion
               - "/application-"
@@ -266,6 +273,14 @@ Resources:
               - "chmod +x /home/ec2-user/open-api-init.sh"
               - "\n"
               - "bash /home/ec2-user/open-api-init.sh"
+              - "\n"
+              # Signal the status from cfn-init
+              - '/opt/aws/bin/cfn-signal -e $? '
+              - '         --stack '
+              - Ref: AWS::StackName
+              - '         --resource OpenApiASG '
+              - '         --region '
+              - Ref: AWS::Region
               - "\n"
 
   DictionaryInstance:
