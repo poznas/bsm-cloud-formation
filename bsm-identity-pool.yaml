@@ -49,19 +49,15 @@ Resources:
               - s3:ListBucket
               - s3:GetObject
               Resource:
-                Fn::Join:
+              - Fn::Join:
                 - ''
                 - - 'arn:aws:s3:::'
                   - Ref: BucketName
                   - '/*'
-              Condition:
-                StringLike:
-                  s3:prefix:
-                  - Fn::Join:
-                    - ''
-                    - - '/'
-                      - Ref: BucketName
-                      - '/'
+              - Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: BucketName
             # Allow authenticated users to write to dedicated subdirectories
             - Effect: Allow
               Action:
