@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: An Amazon Cognito Identity Pool for BSM
+Parameters:
+  DevelopmentBucketName:
+    Type: String
+    Default: 'repo.bsm.pub'
+  FfmpegLayerZipKey:
+    Type: String
+    Default: 'cloud-formation-init/ffmpegLayer.zip'
+
+Resources:
+  LambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - nodejs10.x
+        - python3.6
+        - ruby2.5
+        - java8
+        - go1.x
+      Description: FFMPEG for AWS Lambda
+      LayerName: ffmpeg
+      LicenseInfo: GPL-2.0-or-later
+      Content:
+        S3Bucket:
+          Ref: DevelopmentBucketName
+        S3Key:
+          Ref: FfmpegLayerZipKey
