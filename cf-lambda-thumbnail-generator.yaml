@@ -1,15 +1,59 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: An Amazon Cognito Identity Pool for BSM
 Parameters:
+  UserMediaBuckerName:
+    Type: String
+    Default: 'bsm-user-media'
   DevelopmentBucketName:
     Type: String
     Default: 'repo.bsm.pub'
   FfmpegLayerZipKey:
     Type: String
-    Default: 'cloud-formation-init/ffmpegLayer.zip'
+    Default: 'cloud-formation-init/lambda-thumbnail-generator/ffmpegLayer.zip'
+  FunctionCodeKey:
+    Type: String
+    Default: 'cloud-formation-init/lambda-thumbnail-generator/index.zip'
 
 Resources:
-  LambdaLayer:
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+        Version: 2012-10-17
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+      Policies:
+        - PolicyName: 'userBucketAccess'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - 'arn:aws:s3:::'
+                        - Ref: UserMediaBuckerName
+                        - '/*'
+                  - Fn::Join:
+                      - ''
+                      - - 'arn:aws:s3:::'
+                        - Ref: UserMediaBuckerName
+
+  FfmpegLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:
       CompatibleRuntimes:
@@ -26,3 +70,27 @@ Resources:
           Ref: DevelopmentBucketName
         S3Key:
           Ref: FfmpegLayerZipKey
+
+  ThumbnailGeneratorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: thumbnail-generator
+      Handler: index.handler
+      Timeout: 32
+      MemorySize: 512
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          WIDTH: 512
+          HEIGHT: 288
+      Code:
+        S3Bucket:
+          Ref: DevelopmentBucketName
+        S3Key:
+          Ref: FunctionCodeKey
+      Layers:
+        - !Ref FfmpegLayer
+      Role:
+        Fn::GetAtt:
+          - LambdaRole
+          - Arn
