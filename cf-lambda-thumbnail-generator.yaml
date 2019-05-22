@@ -76,8 +76,8 @@ Resources:
     Properties:
       FunctionName: thumbnail-generator
       Handler: index.handler
-      Timeout: 32
-      MemorySize: 512
+      Timeout: 180
+      MemorySize: 1024
       Runtime: nodejs10.x
       Environment:
         Variables:
